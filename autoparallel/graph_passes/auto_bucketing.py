@@ -116,6 +116,7 @@ class aten_autobucketing_config:
 def aten_autobucketing_reordering_pass(
     gm: torch.fx.Graph, configs: "aten_autobucketing_config"
 ) -> torch.fx.GraphModule:
+    assert gm.owning_module is not None
     new_gm = schedule_overlap_bucketing(
         gm.owning_module,
         collective_bucketing=configs.collective_bucketing,
@@ -145,7 +146,7 @@ def configure_inductor_for_autobucketing(mode: str = "aten"):
     # allow configuring inductor comms optimizations from torchtitan commandline
     if mode == "aten":
         torch._inductor.config.aten_distributed_optimizations.enable_overlap_scheduling = (
-            True
+            torch.cuda.is_available()  # Disable overlap scheduling for non-CUDA devices
         )
         torch._inductor.config.aten_distributed_optimizations.collective_bucketing = (
             True
